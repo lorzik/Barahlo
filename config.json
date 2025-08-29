@@ -1,0 +1,24 @@
+{
+    "video_source": 0,
+    "alert_sound": "alert.wav",
+    "visual_alert_color": [
+        0,
+        0,
+        255
+    ],
+    "danger_zones": [],
+    "danger_objects": [
+        "knife",
+        "gun",
+        "fire",
+        "machine",
+        "cell phone"
+    ],
+    "motion_detection": true,
+    "thermal_detection": false,
+    "alert_types": [
+        "visual",
+        "audio"
+    ],
+    "min_confidence": 0.7
+}

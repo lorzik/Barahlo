@@ -21,7 +21,6 @@ import glob
 
 warnings.filterwarnings("ignore", message="pkg_resources is deprecated")
 
-# Цветовая схема приложения
 COLORS = {
     "bg_primary": "#f0f0f0",
     "bg_secondary": "#ffffff",
@@ -606,19 +605,16 @@ class ImageAnnotator:
         self.classes = ["pointing_finger", "thumbs_up", "peace_sign", "fist", "palm"]
         
     def load_image(self, image_path):
-        """Загрузка изображения для аннотирования"""
         self.image_path = image_path
         self.current_image = cv2.imread(image_path)
         self.annotations = []
         return self.current_image.copy()
     
     def start_drawing(self, x, y):
-        """Начало рисования bounding box"""
         self.drawing = True
         self.start_x, self.start_y = x, y
         
     def draw_bbox(self, x, y, image):
-        """Рисование временного bounding box"""
         if self.drawing:
             temp_image = image.copy()
             cv2.rectangle(temp_image, (self.start_x, self.start_y), (x, y), (0, 255, 0), 2)
@@ -626,7 +622,6 @@ class ImageAnnotator:
         return image
     
     def end_drawing(self, x, y, class_name):
-        """Завершение рисования bounding box"""
         if self.drawing:
             x1, y1 = min(self.start_x, x), min(self.start_y, y)
             x2, y2 = max(self.start_x, x), max(self.start_y, y)
@@ -647,7 +642,6 @@ class ImageAnnotator:
         return False
     
     def save_annotations(self, output_dir):
-        """Сохранение аннотаций в XML формате"""
         if not self.image_path or not self.annotations:
             return False
         
@@ -708,7 +702,6 @@ class SafetyMonitoringSystem:
         self.setup_logger()
     
     def setup_logger(self):
-        """Настройка системы логирования с правильной кодировкой"""
         self.logger = logging.getLogger("SafetyMonitoringSystem")
         self.logger.setLevel(logging.INFO)
         
@@ -724,21 +717,18 @@ class SafetyMonitoringSystem:
         self.logging_enabled = False
     
     def start_logging(self):
-        """Активация логирования"""
         if not self.logging_enabled:
             self.logger.addHandler(self.log_file_handler)
             self.logging_enabled = True
             self.logger.info("Логирование активировано")
     
     def stop_logging(self):
-        """Деактивация логирования"""
         if self.logging_enabled:
             self.logger.info("Логирование деактивировано")
             self.logger.removeHandler(self.log_file_handler)
             self.logging_enabled = False
     
     def log_event(self, message, level="info"):
-        """Запись события в лог с проверкой кодировки"""
         if self.logging_enabled:
             try:
                 if level.lower() == "info":
@@ -837,7 +827,6 @@ class SafetyMonitoringSystem:
                 self.running = False
     
     def detect_dangers(self, frame):
-        """Обнаружение объектов с использованием кастомной модели"""
         danger_detected = False
         
         frame, custom_danger, custom_detections = self.trainer.detect_with_custom_model(frame, self.config["min_confidence"])
@@ -908,7 +897,6 @@ class TrainingWindow(tk.Toplevel):
         main_frame = ttk.Frame(self, padding="20")
         main_frame.pack(expand=True, fill=tk.BOTH)
         
-        # Тип обучения
         training_type_frame = ttk.LabelFrame(main_frame, text="Тип обучения", padding="10")
         training_type_frame.pack(fill=tk.X, pady=5)
         
@@ -920,13 +908,11 @@ class TrainingWindow(tk.Toplevel):
         ttk.Radiobutton(training_type_frame, text="Продолжение обучения", 
                        variable=self.training_type_var, value="resume").pack(anchor=tk.W, pady=2)
         
-        # Прогресс бар
         ttk.Label(main_frame, textvariable=self.system.trainer.training_status, 
                  font=('Helvetica', 10), foreground=COLORS["text_secondary"]).pack(pady=5)
         ttk.Progressbar(main_frame, variable=self.system.trainer.training_progress, 
                        length=600).pack(pady=10)
         
-        # Параметры обучения
         params_frame = ttk.LabelFrame(main_frame, text="Параметры обучения", padding="10")
         params_frame.pack(fill=tk.X, pady=10)
         
@@ -943,7 +929,6 @@ class TrainingWindow(tk.Toplevel):
         self.batch_var = tk.IntVar(value=8)
         ttk.Spinbox(params_frame, from_=1, to=64, textvariable=self.batch_var, width=10).grid(row=1, column=1, padx=5)
         
-        # Директории
         dirs_frame = ttk.LabelFrame(main_frame, text="Директории", padding="10")
         dirs_frame.pack(fill=tk.X, pady=10)
         
@@ -965,7 +950,6 @@ class TrainingWindow(tk.Toplevel):
         ttk.Button(dirs_frame, text="Обзор", 
                   command=lambda: self.browse_directory(self.output_var)).grid(row=2, column=2, padx=5)
         
-        # Кнопки
         btn_frame = ttk.Frame(main_frame)
         btn_frame.pack(pady=20)
         
@@ -1017,7 +1001,7 @@ class TrainingWindow(tk.Toplevel):
                     self.train_btn.config(state=tk.DISABLED)
                 self.system.trainer.training_status.set("Готов к продолжению обучения")
         
-        else:  # new
+        else: 
             if self.data_prepared:
                 self.train_btn.config(state=tk.NORMAL)
             else:

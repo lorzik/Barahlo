@@ -21,7 +21,6 @@ import glob
 
 warnings.filterwarnings("ignore", message="pkg_resources is deprecated")
 
-# Цветовая схема приложения
 COLORS = {
     "bg_primary": "#f0f0f0",
     "bg_secondary": "#ffffff",
@@ -606,19 +605,17 @@ class ImageAnnotator:
         self.classes = ["pointing_finger", "thumbs_up", "peace_sign", "fist", "palm"]
         
     def load_image(self, image_path):
-        """Загрузка изображения для аннотирования"""
         self.image_path = image_path
         self.current_image = cv2.imread(image_path)
         self.annotations = []
         return self.current_image.copy()
     
     def start_drawing(self, x, y):
-        """Начало рисования bounding box"""
         self.drawing = True
         self.start_x, self.start_y = x, y
         
     def draw_bbox(self, x, y, image):
-        """Рисование временного bounding box"""
+        #Рисование временного bounding box
         if self.drawing:
             temp_image = image.copy()
             cv2.rectangle(temp_image, (self.start_x, self.start_y), (x, y), (0, 255, 0), 2)
@@ -626,22 +623,17 @@ class ImageAnnotator:
         return image
     
     def end_drawing(self, x, y, class_name):
-        """Завершение рисования bounding box"""
         if self.drawing:
-            # Убедимся, что координаты корректны
             x1, y1 = min(self.start_x, x), min(self.start_y, y)
             x2, y2 = max(self.start_x, x), max(self.start_y, y)
             
-            # Проверяем, что bounding box имеет достаточный размер
             if abs(x2 - x1) < 10 or abs(y2 - y1) < 10:
                 self.drawing = False
                 return False
-            
-            # Добавляем класс в список если его еще нет
+        
             if class_name and class_name not in self.classes:
                 self.classes.append(class_name)
             
-            # Добавляем аннотацию
             self.annotations.append({
                 'class': class_name,
                 'bbox': [x1, y1, x2, y2]
@@ -651,7 +643,7 @@ class ImageAnnotator:
         return False
     
     def save_annotations(self, output_dir):
-        """Сохранение аннотаций в XML формате"""
+        #Сохранение аннотаций в XML формате
         if not self.image_path or not self.annotations:
             return False
         
@@ -659,11 +651,9 @@ class ImageAnnotator:
             # Создаем XML структуру
             root = ET.Element("annotation")
             
-            # Добавляем информацию о файле
             filename_elem = ET.SubElement(root, "filename")
             filename_elem.text = os.path.basename(self.image_path)
             
-            # Добавляем размеры изображения
             size_elem = ET.SubElement(root, "size")
             height, width = self.current_image.shape[:2]
             
@@ -674,7 +664,7 @@ class ImageAnnotator:
             depth_elem = ET.SubElement(size_elem, "depth")
             depth_elem.text = "3"
             
-            # Добавляем объекты
+            # Добавлее объекты
             for ann in self.annotations:
                 obj_elem = ET.SubElement(root, "object")
                 
@@ -691,7 +681,6 @@ class ImageAnnotator:
                 ymax_elem = ET.SubElement(bndbox_elem, "ymax")
                 ymax_elem.text = str(ann['bbox'][3])
             
-            # Сохраняем XML
             base_name = os.path.splitext(os.path.basename(self.image_path))[0]
             xml_path = os.path.join(output_dir, f"{base_name}.xml")
             
@@ -717,7 +706,6 @@ class SafetyMonitoringSystem:
         self.setup_logger()
     
     def show_detection_info(self):
-        """Показать информацию о детекции в реальном времени"""
         if hasattr(self, 'cap') and self.cap.isOpened():
             ret, frame = self.cap.read()
             if ret:
@@ -735,7 +723,7 @@ class SafetyMonitoringSystem:
                 self.net.setInput(blob)
                 outs = self.net.forward(self.output_layers)
                 
-                # Обработка результатов YOLO
+                # Обработка результатов
                 class_ids = []
                 confidences = []
                 boxes = []
@@ -769,37 +757,31 @@ class SafetyMonitoringSystem:
         self.logger = logging.getLogger("SafetyMonitoringSystem")
         self.logger.setLevel(logging.INFO)
         
-        # Формат логов
+        # Логов
         formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s', 
                                     datefmt='%Y-%m-%d %H:%M:%S')
         
-        # Очистка предыдущих обработчиков
         for handler in self.logger.handlers[:]:
             self.logger.removeHandler(handler)
         
-        # Создаем файловый обработчик с указанием кодировки UTF-8
         self.log_file_handler = logging.FileHandler("safety_log.txt", encoding='utf-8')
         self.log_file_handler.setFormatter(formatter)
         
-        # По умолчанию логирование выключено
         self.logging_enabled = False
     
     def start_logging(self):
-        """Активация логирования"""
         if not self.logging_enabled:
             self.logger.addHandler(self.log_file_handler)
             self.logging_enabled = True
             self.logger.info("Логирование активировано")
     
     def stop_logging(self):
-        """Деактивация логирования"""
         if self.logging_enabled:
             self.logger.info("Логирование деактивировано")
             self.logger.removeHandler(self.log_file_handler)
             self.logging_enabled = False
     
     def log_event(self, message, level="info"):
-        """Запись события в лог с проверкой кодировки"""
         if self.logging_enabled:
             try:
                 if level.lower() == "info":
@@ -809,7 +791,6 @@ class SafetyMonitoringSystem:
                 elif level.lower() == "error":
                     self.logger.error(message)
             except UnicodeEncodeError:
-                # Если возникла ошибка кодировки, пробуем записать ASCII-версию
                 safe_message = message.encode('ascii', errors='replace').decode('ascii')
                 self.logger.warning(f"Encoding error, safe message: {safe_message}")
 
@@ -844,7 +825,7 @@ class SafetyMonitoringSystem:
 
     def init_models(self):
         try:
-            # Только кастомная модель
+            # Только кастомка
             if os.path.exists('custom_model.pt'):
                 self.trainer.reset_training_state()
                 if self.trainer.load_custom_model('custom_model.pt'):
@@ -900,29 +881,26 @@ class SafetyMonitoringSystem:
                 self.running = False
     
     def _detect_with_yolo(self, frame):
-        """Детекция с помощью основной модели YOLO"""
+        #Детекция с помощью основной модели YOLO
         danger_detected = False
         height, width = frame.shape[:2]
         
         if not hasattr(self, 'net') or not hasattr(self, 'output_layers'):
             return frame, False
         
-        # Подготовка кадра для YOLO
         blob = cv2.dnn.blobFromImage(frame, 1/255.0, (416, 416), swapRB=True, crop=False)
         self.net.setInput(blob)
         outs = self.net.forward(self.output_layers)
         
-        # Параметры фильтрации
         conf_threshold = self.config["min_confidence"]
         nms_threshold = 0.4
         class_ids = []
         confidences = []
         boxes = []
         
-        # Нормализация списка опасных объектов
         danger_objects = [obj.strip().lower() for obj in self.config["danger_objects"]]
         
-        # Обработка выходных данных YOLO
+        # Обработка выходных данных
         for out in outs:
             for detection in out:
                 scores = detection[5:]
@@ -941,36 +919,29 @@ class SafetyMonitoringSystem:
                     confidences.append(float(confidence))
                     class_ids.append(class_id)
         
-        # Применение NMS
         indices = cv2.dnn.NMSBoxes(boxes, confidences, conf_threshold, nms_threshold)
         
-        # Цвета (BGR формат)
-        safe_color = (0, 255, 0)  # Зеленый
-        danger_color = (0, 0, 255)  # Красный
+        safe_color = (0, 255, 0)  
+        danger_color = (0, 0, 255) 
         
         if "visual_alert_color" in self.config:
             danger_color = tuple(map(int, self.config["visual_alert_color"][::-1]))
-        
-        # Отрисовка bounding boxes
+
         font = cv2.FONT_HERSHEY_PLAIN
         if len(indices) > 0:
             for i in indices.flatten():
                 x, y, w, h = boxes[i]
-                
-                # Получаем метку класса
+
                 label = self.classes[class_ids[i]].strip().lower() if class_ids[i] < len(self.classes) else "unknown"
                 confidence = confidences[i]
-                
-                # Инициализация переменной перед использованием
+
                 is_dangerous = False
-                
-                # Улучшенная проверка на опасный объект
+
                 for danger_obj in danger_objects:
                     if danger_obj in label:
                         is_dangerous = True
                         break
-                
-                # Установка цвета и метки
+
                 if is_dangerous:
                     danger_detected = True
                     color = danger_color
@@ -978,8 +949,7 @@ class SafetyMonitoringSystem:
                     self.log_event(f"Обнаружен опасный объект: {label}", "warning")
                 else:
                     color = safe_color
-                
-                # Отрисовка
+
                 cv2.rectangle(frame, (x, y), (x + w, y + h), color, 2)
                 cv2.putText(frame, f"{label} {confidence:.2f}", (x, y - 5), font, 1, color, 1)
         
@@ -989,32 +959,27 @@ class SafetyMonitoringSystem:
         """Обнаружение объектов с использованием обеих моделей"""
         danger_detected = False
         
-        # Детекция кастомной моделью YOLOv8
+        # Детекция кастомной моделью
         frame, custom_danger, custom_detections = self.trainer.detect_with_custom_model(frame, self.config["min_confidence"])
         
         # Отрисовка результатов кастомной модели
         if custom_detections:
             danger_color = tuple(map(int, self.config["visual_alert_color"][::-1]))
-            safe_color = (255, 0, 0)  # Синий для кастомных объектов
+            safe_color = (255, 0, 0) 
             font = cv2.FONT_HERSHEY_PLAIN
             
             for detection in custom_detections:
                 x1, y1, x2, y2 = detection['bbox']
                 confidence = detection['confidence']
                 label = detection['label']
-                
-                # Проверка на опасный объект - используем реальные имена классов из custom_classes
+
                 danger_objects = [obj.strip().lower() for obj in self.config["danger_objects"]]
-                
-                # Проверяем, содержит ли метка любой из опасных объектов
+
                 is_dangerous = any(danger_obj in label.lower() for danger_obj in danger_objects)
                 
-                # Дополнительная проверка: если классы называются "class_0", "class_1" и т.д.
-                # то проверяем по индексу (предполагая, что class_0 - это первый опасный объект и т.д.)
                 if not is_dangerous and label.startswith('class_'):
                     try:
                         class_idx = int(label.split('_')[1])
-                        # Если у нас есть соответствие между индексом и опасными объектами
                         if class_idx < len(danger_objects) and danger_objects[class_idx]:
                             is_dangerous = True
                     except (IndexError, ValueError):
@@ -1066,18 +1031,6 @@ class SafetyMonitoringSystem:
     def save_config(self):
         with open("config.json", 'w') as f:
             json.dump(self.config, f, indent=4)
-    
-    def switch_to_custom_model(self):
-        """Переключение на кастомную модель"""
-        if self.trainer.custom_model is not None:
-            print("Переключение на кастомную модель")
-            # Здесь можно добавить логику переключения между моделями
-        else:
-            print("Кастомная модель не загружена")
-    
-    def switch_to_standard_model(self):
-        """Переключение на стандартную модель"""
-        print("Используется стандартная YOLO модель")
 
 class TrainingWindow(tk.Toplevel):
     def __init__(self, parent, system):
@@ -1093,7 +1046,6 @@ class TrainingWindow(tk.Toplevel):
         main_frame = ttk.Frame(self, padding="20")
         main_frame.pack(expand=True, fill=tk.BOTH)
         
-        # Тип обучения
         training_type_frame = ttk.LabelFrame(main_frame, text="Тип обучения", padding="10")
         training_type_frame.pack(fill=tk.X, pady=5)
         
@@ -1104,14 +1056,11 @@ class TrainingWindow(tk.Toplevel):
                        variable=self.training_type_var, value="incremental").pack(anchor=tk.W, pady=2)
         ttk.Radiobutton(training_type_frame, text="Продолжение обучения", 
                        variable=self.training_type_var, value="resume").pack(anchor=tk.W, pady=2)
-        
-        # Прогресс бар
         ttk.Label(main_frame, textvariable=self.system.trainer.training_status, 
                  font=('Helvetica', 10), foreground=COLORS["text_secondary"]).pack(pady=5)
         ttk.Progressbar(main_frame, variable=self.system.trainer.training_progress, 
                        length=600).pack(pady=10)
-        
-        # Параметры обучения
+
         params_frame = ttk.LabelFrame(main_frame, text="Параметры обучения", padding="10")
         params_frame.pack(fill=tk.X, pady=10)
         
@@ -1127,8 +1076,7 @@ class TrainingWindow(tk.Toplevel):
         ttk.Label(params_frame, text="Размер батча:", foreground=COLORS["text_primary"]).grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
         self.batch_var = tk.IntVar(value=8)
         ttk.Spinbox(params_frame, from_=1, to=64, textvariable=self.batch_var, width=10).grid(row=1, column=1, padx=5)
-        
-        # Директории
+
         dirs_frame = ttk.LabelFrame(main_frame, text="Директории", padding="10")
         dirs_frame.pack(fill=tk.X, pady=10)
         
@@ -1149,8 +1097,7 @@ class TrainingWindow(tk.Toplevel):
         ttk.Entry(dirs_frame, textvariable=self.output_var, width=50).grid(row=2, column=1, padx=5)
         ttk.Button(dirs_frame, text="Обзор", 
                   command=lambda: self.browse_directory(self.output_var)).grid(row=2, column=2, padx=5)
-        
-        # Кнопки
+
         btn_frame = ttk.Frame(main_frame)
         btn_frame.pack(pady=20)
         
@@ -1202,7 +1149,7 @@ class TrainingWindow(tk.Toplevel):
                     self.train_btn.config(state=tk.DISABLED)
                 self.system.trainer.training_status.set("Готов к продолжению обучения")
         
-        else:  # new
+        else: 
             if self.data_prepared:
                 self.train_btn.config(state=tk.NORMAL)
             else:
@@ -1313,8 +1260,8 @@ class AnnotationWindow(tk.Toplevel):
         self.geometry("900x700")
         self.iconbitmap("security_icon.ico")
         self.configure(bg=COLORS["bg_primary"])
-        self.scale_x = 1.0  # Инициализируем scale_x
-        self.scale_y = 1.0  # Инициализируем scale_y
+        self.scale_x = 1.0
+        self.scale_y = 1.0  
         self.create_widgets()
         
         # Привязка событий мыши
@@ -1325,8 +1272,7 @@ class AnnotationWindow(tk.Toplevel):
     def create_widgets(self):
         main_frame = ttk.Frame(self, padding="10")
         main_frame.pack(expand=True, fill=tk.BOTH)
-        
-        # Верхняя панель управления
+
         control_frame = ttk.Frame(main_frame)
         control_frame.pack(fill=tk.X, pady=5)
         
@@ -1338,44 +1284,37 @@ class AnnotationWindow(tk.Toplevel):
         
         ttk.Button(control_frame, text="Следующее", 
                   command=self.next_image).pack(side=tk.LEFT, padx=5)
-        
-        # Панель классов
+
         class_frame = ttk.Frame(control_frame)
         class_frame.pack(side=tk.LEFT, padx=10)
         
         ttk.Label(class_frame, text="Класс:", foreground=COLORS["text_primary"]).pack(side=tk.LEFT)
-        
-        # Combobox с возможностью ввода своего класса
+
         self.class_var = tk.StringVar(value="pointing_finger")
         self.class_combo = ttk.Combobox(class_frame, textvariable=self.class_var, 
                                       values=self.annotator.classes, width=20)
         self.class_combo.pack(side=tk.LEFT, padx=5)
         self.class_combo.bind("<KeyRelease>", self.on_class_combo_keyrelease)
-        
-        # Кнопка добавления нового класса
+
         ttk.Button(class_frame, text="+", width=3,
                   command=self.add_new_class).pack(side=tk.LEFT, padx=2)
-        
-        # Кнопка управления классами
+
         ttk.Button(class_frame, text="Управление классами", 
                   command=self.manage_classes).pack(side=tk.LEFT, padx=5)
-        
-        # Canvas для отображения изображения
+
         canvas_frame = ttk.Frame(main_frame)
         canvas_frame.pack(expand=True, fill=tk.BOTH, pady=5)
         
         self.canvas = tk.Canvas(canvas_frame, bg="black", cursor="cross")
         self.canvas.pack(expand=True, fill=tk.BOTH)
-        
-        # Панель информации
+
         info_frame = ttk.Frame(main_frame)
         info_frame.pack(fill=tk.X, pady=2)
         
         ttk.Label(info_frame, text="Инструкция:", foreground=COLORS["text_primary"]).pack(side=tk.LEFT)
         ttk.Label(info_frame, text="1. Зажмите ЛКМ и выделите объект 2. Отпустите для создания bounding box", 
                  foreground=COLORS["text_secondary"]).pack(side=tk.LEFT, padx=5)
-        
-        # Нижняя панель
+
         bottom_frame = ttk.Frame(main_frame)
         bottom_frame.pack(fill=tk.X, pady=5)
         
@@ -1393,8 +1332,7 @@ class AnnotationWindow(tk.Toplevel):
         
         ttk.Button(bottom_frame, text="Закрыть", 
                   command=self.destroy).pack(side=tk.RIGHT, padx=5)
-        
-        # Статус
+
         self.status_var = tk.StringVar(value="Загрузите изображения")
         ttk.Label(bottom_frame, textvariable=self.status_var, foreground=COLORS["text_secondary"]).pack(side=tk.LEFT, padx=5)
         
@@ -1403,15 +1341,11 @@ class AnnotationWindow(tk.Toplevel):
         self.original_image = None
         
     def on_class_combo_keyrelease(self, event):
-        """Обработка ввода в комбобокс"""
-        # Автоматически обновляем список классов при вводе
         current_text = self.class_var.get()
         if current_text and current_text not in self.annotator.classes:
-            # Временно добавляем в список для отображения
             self.class_combo['values'] = list(self.annotator.classes) + [current_text]
             
     def add_new_class(self):
-        """Добавление нового класса"""
         new_class = self.class_var.get().strip()
         if new_class:
             if new_class not in self.annotator.classes:
@@ -1424,7 +1358,6 @@ class AnnotationWindow(tk.Toplevel):
             messagebox.showwarning("Предупреждение", "Введите название класса")
             
     def manage_classes(self):
-        """Управление списком классов"""
         class_win = tk.Toplevel(self)
         class_win.title("Управление классов")
         class_win.geometry("400x300")
@@ -1432,8 +1365,7 @@ class AnnotationWindow(tk.Toplevel):
         
         main_frame = ttk.Frame(class_win, padding="10")
         main_frame.pack(expand=True, fill=tk.BOTH)
-        
-        # Список классов
+
         ttk.Label(main_frame, text="Существующие классы:", foreground=COLORS["text_primary"]).pack(pady=5)
         
         class_listbox = tk.Listbox(main_frame, height=10)
@@ -1441,8 +1373,7 @@ class AnnotationWindow(tk.Toplevel):
         
         for cls in self.annotator.classes:
             class_listbox.insert(tk.END, cls)
-        
-        # Панель управления
+
         btn_frame = ttk.Frame(main_frame)
         btn_frame.pack(fill=tk.X, pady=5)
         
@@ -1462,7 +1393,6 @@ class AnnotationWindow(tk.Toplevel):
                   command=class_win.destroy).pack(side=tk.RIGHT, padx=5)
         
     def load_images(self):
-        """Загрузка изображений для разметки"""
         files = filedialog.askopenfilenames(
             title="Выберите изображения для разметки",
             filetypes=[("Image files", "*.jpg *.jpeg *.png *.bmp")]
@@ -1474,7 +1404,6 @@ class AnnotationWindow(tk.Toplevel):
             self.load_current_image()
             
     def load_current_image(self):
-        """Загрузка текущего изображения"""
         if 0 <= self.current_image_index < len(self.image_files):
             image_path = self.image_files[self.current_image_index]
             self.original_image = cv2.imread(image_path)
@@ -1489,17 +1418,14 @@ class AnnotationWindow(tk.Toplevel):
             self.status_var.set(f"Изображение {self.current_image_index + 1}/{len(self.image_files)}")
             
     def display_image(self, image):
-        """Отображение изображения на canvas"""
         self.canvas.delete("all")
         
-        # Конвертируем BGR в RGB
+        # BGR в RGB
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         height, width = image.shape[:2]
         
-        # Сохраняем оригинальные размеры
         self.orig_height, self.orig_width = height, width
         
-        # Масштабируем изображение если нужно
         max_size = 800
         if max(width, height) > max_size:
             scale = max_size / max(width, height)
@@ -1513,20 +1439,15 @@ class AnnotationWindow(tk.Toplevel):
             self.scale_x = 1.0
             self.scale_y = 1.0
         
-        # Конвертируем в PhotoImage
         self.photo = ImageTk.PhotoImage(image=Image.fromarray(image_rgb))
-        
-        # Отображаем на canvas
+
         self.canvas.config(width=new_width, height=new_height)
         self.canvas.create_image(0, 0, anchor=tk.NW, image=self.photo)
         
-        # Отображаем существующие аннотации
         self.draw_existing_annotations()
         
     def draw_existing_annotations(self):
-        """Отрисовка существующих аннотаций"""
         for ann in self.annotator.annotations:
-            # Масштабируем координаты для отображения
             x1 = int(ann['bbox'][0] * self.scale_x)
             y1 = int(ann['bbox'][1] * self.scale_y)
             x2 = int(ann['bbox'][2] * self.scale_x)
@@ -1537,28 +1458,22 @@ class AnnotationWindow(tk.Toplevel):
                                   font=("Arial", 10, "bold"), anchor=tk.NW)
             
     def on_mouse_press(self, event):
-        """Обработка нажатия мыши"""
-        # Преобразуем координаты обратно в оригинальный масштаб
+        #Обработка нажатия мыши
         orig_x = int(event.x / self.scale_x)
         orig_y = int(event.y / self.scale_y)
         self.annotator.start_drawing(orig_x, orig_y)
         
     def on_mouse_drag(self, event):
-        """Обработка перемещения мыши с зажатой кнопкой"""
         if self.annotator.drawing:
-            # Создаем временное изображение для отрисовки
             temp_image = self.original_image.copy()
             
-            # Преобразуем координаты обратно в оригинальный масштаб
             orig_x = int(event.x / self.scale_x)
             orig_y = int(event.y / self.scale_y)
             
-            # Рисуем временный bounding box на оригинальном изображении
             cv2.rectangle(temp_image, 
                          (self.annotator.start_x, self.annotator.start_y),
                          (orig_x, orig_y), (0, 255, 0), 2)
             
-            # Масштабируем для отображения
             temp_image_rgb = cv2.cvtColor(temp_image, cv2.COLOR_BGR2RGB)
             if max(self.orig_width, self.orig_height) > 800:
                 scale = 800 / max(self.orig_width, self.orig_height)
@@ -1566,15 +1481,13 @@ class AnnotationWindow(tk.Toplevel):
                 new_height = int(self.orig_height * scale)
                 temp_image_rgb = cv2.resize(temp_image_rgb, (new_width, new_height))
             
-            # Обновляем canvas
             self.temp_photo = ImageTk.PhotoImage(image=Image.fromarray(temp_image_rgb))
             self.canvas.create_image(0, 0, anchor=tk.NW, image=self.temp_photo)
             self.draw_existing_annotations()
             
     def on_mouse_release(self, event):
-        """Обработка отпускания мыши"""
+        #Обработка отпускания мыши
         if self.annotator.drawing:
-            # Преобразуем координаты обратно в оригинальный масштаб
             orig_x = int(event.x / self.scale_x)
             orig_y = int(event.y / self.scale_y)
             
@@ -1582,31 +1495,25 @@ class AnnotationWindow(tk.Toplevel):
             if not class_name:
                 messagebox.showwarning("Предупреждение", "Введите название класса")
                 self.annotator.drawing = False
-                # Восстанавливаем оригинальное изображение
                 self.display_image(self.original_image)
                 return
                 
             if self.annotator.end_drawing(orig_x, orig_y, class_name):
-                # Перерисовываем изображение с новой аннотацией
                 self.display_image(self.original_image)
             else:
-                # Восстанавливаем оригинальное изображение если аннотация не была добавлена
                 self.display_image(self.original_image)
                 
     def previous_image(self):
-        """Переход к предыдущему изображению"""
         if self.current_image_index > 0:
             self.current_image_index -= 1
             self.load_current_image()
             
     def next_image(self):
-        """Переход к следующему изображению"""
         if self.current_image_index < len(self.image_files) - 1:
             self.current_image_index += 1
             self.load_current_image()
             
     def save_annotations(self):
-        """Сохранение аннотаций"""
         if not self.annotator.image_path:
             messagebox.showwarning("Предупреждение", "Нет загруженного изображения")
             return
@@ -1618,11 +1525,9 @@ class AnnotationWindow(tk.Toplevel):
         output_dir = filedialog.askdirectory(title="Выберите папку для сохранения аннотаций")
         if output_dir:
             try:
-                # Убедимся, что у аннотатора есть доступ к оригинальному изображению
                 self.annotator.current_image = self.original_image
                 if self.annotator.save_annotations(output_dir):
                     messagebox.showinfo("Успех", "Аннотации успешно сохранены!")
-                    # Сохраняем список классов в файл
                     self.save_class_list(output_dir)
                 else:
                     messagebox.showerror("Ошибка", "Не удалось сохранить аннотации")
@@ -1630,7 +1535,6 @@ class AnnotationWindow(tk.Toplevel):
                 messagebox.showerror("Ошибка", f"Ошибка при сохранении: {str(e)}")
                 
     def save_class_list(self, output_dir):
-        """Сохранение списка классов"""
         try:
             class_file = os.path.join(output_dir, "classes.txt")
             with open(class_file, 'w', encoding='utf-8') as f:
@@ -1640,33 +1544,27 @@ class AnnotationWindow(tk.Toplevel):
             print(f"Ошибка сохранения списка классов: {e}")
                 
     def delete_last_annotation(self):
-        """Удаление последней аннотации"""
         if self.annotator.annotations:
             self.annotator.annotations.pop()
             self.display_image(self.original_image)
             
     def clear_annotations(self):
-        """Очистка всех аннотаций"""
         self.annotator.annotations = []
         self.display_image(self.original_image)
         
     def auto_annotate(self):
-        """Автоматическая разметка с помощью YOLO"""
         if not self.annotator.image_path:
             messagebox.showwarning("Предупреждение", "Сначала загрузите изображение")
             return
             
-        # Используем основную модель YOLO для автоматической разметки
         try:
             image = self.original_image.copy()
             height, width = image.shape[:2]
             
-            # Детекция с помощью YOLO
             blob = cv2.dnn.blobFromImage(image, 1/255.0, (416, 416), swapRB=True, crop=False)
             self.system.net.setInput(blob)
             outs = self.system.net.forward(self.system.output_layers)
             
-            # Обработка результатов
             conf_threshold = 0.5
             class_ids = []
             confidences = []
@@ -1690,14 +1588,12 @@ class AnnotationWindow(tk.Toplevel):
                         confidences.append(float(confidence))
                         class_ids.append(class_id)
             
-            # Добавляем обнаруженные объекты в аннотации
             added_count = 0
             for i, (box, class_id) in enumerate(zip(boxes, class_ids)):
                 if class_id < len(self.system.classes):
                     class_name = self.system.classes[class_id]
                     x, y, w, h = box
                     
-                    # Проверяем, что bounding box валидный
                     if w > 10 and h > 10:
                         self.annotator.annotations.append({
                             'class': class_name,
@@ -1705,7 +1601,6 @@ class AnnotationWindow(tk.Toplevel):
                         })
                         added_count += 1
             
-            # Обновляем отображение
             self.display_image(image)
             messagebox.showinfo("Успех", f"Автоматически размечено {added_count} объектов")
             
@@ -1723,26 +1618,20 @@ class SettingsWindow(tk.Toplevel):
         self.create_widgets()
     
     def create_widgets(self):
-        # Notebook для вкладок
         notebook = ttk.Notebook(self)
         notebook.pack(expand=True, fill=tk.BOTH, padx=10, pady=10)
-        
-        # Вкладка основных настроек
+
         general_frame = ttk.Frame(notebook)
         notebook.add(general_frame, text="Основные")
-        self.create_general_tab(general_frame)
-        
-        # Вкладка объектов
+
         objects_frame = ttk.Frame(notebook)
         notebook.add(objects_frame, text="Объекты")
         self.create_objects_tab(objects_frame)
-        
-        # Вкладка оповещений
+
         alerts_frame = ttk.Frame(notebook)
         notebook.add(alerts_frame, text="Оповещения")
         self.create_alerts_tab(alerts_frame)
-        
-        # Кнопки сохранения/отмены
+
         btn_frame = ttk.Frame(self)
         btn_frame.pack(pady=10)
         
@@ -1750,14 +1639,12 @@ class SettingsWindow(tk.Toplevel):
         ttk.Button(btn_frame, text="Отмена", command=self.destroy).pack(side=tk.LEFT, padx=5)
     
     def create_general_tab(self, parent):
-        # Минимальная уверенность
         ttk.Label(parent, text="Минимальная уверенность обнаружения:", foreground=COLORS["text_primary"]).grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
         self.confidence_var = tk.DoubleVar(value=self.system.config["min_confidence"])
         ttk.Scale(parent, from_=0.1, to=1.0, variable=self.confidence_var, 
                  orient=tk.HORIZONTAL, length=300).grid(row=0, column=1, padx=5, pady=5)
         ttk.Label(parent, textvariable=self.confidence_var, foreground=COLORS["accent"]).grid(row=0, column=2, padx=5)
         
-        # Цвет предупреждения
         ttk.Label(parent, text="Цвет предупреждения (RGB):", foreground=COLORS["text_primary"]).grid(row=1, column=0, sticky=tk.W, padx=5, pady=5)
         
         color_frame = ttk.Frame(parent)
@@ -1770,27 +1657,21 @@ class SettingsWindow(tk.Toplevel):
             self.color_vars.append(var)
             ttk.Spinbox(color_frame, from_=0, to=255, width=3, textvariable=var).grid(row=0, column=i*2+1, padx=2)
         
-        # Демонстрация цвета
         self.color_demo = tk.Label(parent, text="Пример", width=15, relief=tk.SUNKEN)
         self.color_demo.grid(row=2, column=1, pady=5, sticky=tk.W)
         self.update_color_demo()
         
-        # Привязка событий для обновления демо цвета
         for var in self.color_vars:
             var.trace_add("write", lambda *args: self.update_color_demo())
     
     def create_objects_tab(self, parent):
-        # Список опасных объектов
         ttk.Label(parent, text="Опасные объекты (по одному в строке):", foreground=COLORS["text_primary"]).pack(pady=(5,0))
         
         self.objects_text = scrolledtext.ScrolledText(parent, width=40, height=15, wrap=tk.WORD)
         self.objects_text.pack(padx=5, pady=5, expand=True, fill=tk.BOTH)
-        
-        # Заполнение текущими объектами
         objects = "\n".join(self.system.config["danger_objects"])
         self.objects_text.insert(tk.END, objects)
         
-        # Кнопка добавления стандартных объектов
         btn_frame = ttk.Frame(parent)
         btn_frame.pack(pady=5)
         
@@ -1798,7 +1679,6 @@ class SettingsWindow(tk.Toplevel):
                   command=self.add_default_objects).pack(side=tk.LEFT, padx=5)
     
     def create_alerts_tab(self, parent):
-        # Типы оповещений
         ttk.Label(parent, text="Типы оповещений:", foreground=COLORS["text_primary"]).grid(row=0, column=0, sticky=tk.W, padx=5, pady=5)
         
         self.alert_vars = {}
@@ -1807,8 +1687,7 @@ class SettingsWindow(tk.Toplevel):
             self.alert_vars[alert_type] = var
             cb = ttk.Checkbutton(parent, text=alert_type.capitalize(), variable=var)
             cb.grid(row=i+1, column=0, sticky=tk.W, padx=20, pady=2)
-        
-        # Обнаружение движения
+
         ttk.Label(parent, text="Дополнительные функции:", foreground=COLORS["text_primary"]).grid(row=3, column=0, sticky=tk.W, padx=5, pady=5)
         
         self.motion_var = tk.BooleanVar(value=self.system.config["motion_detection"])
@@ -1816,13 +1695,11 @@ class SettingsWindow(tk.Toplevel):
             row=4, column=0, sticky=tk.W, padx=20, pady=2)
     
     def update_color_demo(self):
-        """Обновление демонстрации цвета"""
         color = [var.get() for var in self.color_vars]
         hex_color = "#%02x%02x%02x" % tuple(color)
         self.color_demo.config(bg=hex_color, fg="white" if sum(color) < 384 else "black")
     
     def add_default_objects(self):
-        """Добавление стандартных опасных объектов"""
         default_objects = [
             "knife", "gun", "pistol", "rifle", "handgun", 
             "fire", "flame", "weapon", "cell phone", "explosive", "bomb"
@@ -1830,27 +1707,21 @@ class SettingsWindow(tk.Toplevel):
         self.objects_text.insert(tk.END, "\n" + "\n".join(default_objects))
     
     def save_settings(self):
-        """Сохранение всех измененных настроек"""
         try:
-            # Основные настройки
             self.system.config["min_confidence"] = self.confidence_var.get()
             self.system.config["visual_alert_color"] = [var.get() for var in self.color_vars]
             
-            # Опасные объекты
             objects_text = self.objects_text.get("1.0", tk.END).strip()
             self.system.config["danger_objects"] = [
                 obj.strip() for obj in objects_text.split("\n") if obj.strip()
             ]
-            
-            # Оповещения
+
             self.system.config["alert_types"] = [
                 alert_type for alert_type, var in self.alert_vars.items() if var.get()
             ]
-            
-            # Дополнительные функции
+
             self.system.config["motion_detection"] = self.motion_var.get()
-            
-            # Сохраняем конфиг
+
             self.system.save_config()
             messagebox.showinfo("Успех", "Настройки успешно сохранены!")
             self.destroy()
@@ -1869,7 +1740,6 @@ class Application(tk.Tk):
         self.configure(bg=COLORS["bg_primary"])
         self.protocol("WM_DELETE_WINDOW", self.on_close)
 
-        # Инициализируем Tkinter переменные для trainer после создания главного окна
         self.system.trainer.set_tk_vars(
             tk.DoubleVar(value=0),
             tk.StringVar(value="Готов к обучению")
@@ -1878,23 +1748,18 @@ class Application(tk.Tk):
         self.create_widgets()
     
     def create_widgets(self):
-        # Стиль
         style = ttk.Style()
         style.configure('TButton', font=('Helvetica', 12), background=COLORS["accent"])
         style.configure('TLabel', font=('Helvetica', 12), background=COLORS["bg_primary"], foreground=COLORS["text_primary"])
         style.configure('TLabelframe', background=COLORS["bg_primary"], foreground=COLORS["text_primary"])
         style.configure('TLabelframe.Label', background=COLORS["bg_primary"], foreground=COLORS["text_primary"])
-        
-        # Главный фрейм
+
         self.main_frame = ttk.Frame(self, padding="20")
         self.main_frame.pack(expand=True, fill=tk.BOTH)
-        
-        # Заголовок
+
         ttk.Label(self.main_frame, text="Система мониторинга безопасности", 
                  font=('Helvetica', 14, 'bold'), foreground=COLORS["text_primary"]).pack(pady=10)
-        
-        
-        # Кнопки выбора режима
+
         btn_frame = ttk.Frame(self.main_frame)
         btn_frame.pack(pady=20)
         
@@ -1902,25 +1767,21 @@ class Application(tk.Tk):
                   command=self.start_camera).pack(side=tk.LEFT, padx=10)
         ttk.Button(btn_frame, text="Запуск с видеофайла", 
                   command=self.start_video_file).pack(side=tk.LEFT, padx=10)
-        
-        # Статус
+
         self.status_var = tk.StringVar(value="Готов к работе")
         ttk.Label(self.main_frame, textvariable=self.status_var, 
                  font=('Helvetica', 11), foreground=COLORS["text_secondary"]).pack(pady=10)
-        
-        # Кнопка остановки
+
         self.stop_btn = ttk.Button(self.main_frame, text="Остановить", 
                                   state=tk.DISABLED, command=self.stop)
         self.stop_btn.pack(pady=10)
-        
-        # Нижняя панель
+
         bottom_frame = ttk.Frame(self.main_frame)
         bottom_frame.pack(side=tk.BOTTOM, fill=tk.X, pady=10)
         
         ttk.Button(bottom_frame, text="Разметка изображений", 
                   command=self.open_annotation).pack(side=tk.LEFT, padx=5)
-        
-        # Добавляем кнопку обучения
+
         ttk.Button(bottom_frame, text="Обучение модели", 
                   command=self.open_training).pack(side=tk.LEFT, padx=5)
         
@@ -1929,8 +1790,7 @@ class Application(tk.Tk):
         
         ttk.Button(bottom_frame, text="Отладка", 
                   command=self.debug_detection).pack(side=tk.LEFT, padx=5)
-        
-        # Панель логирования
+
         log_frame = ttk.Frame(self.main_frame)
         log_frame.pack(side=tk.BOTTOM, fill=tk.X, pady=5)
         
@@ -1942,7 +1802,6 @@ class Application(tk.Tk):
                   command=self.on_close).pack(side=tk.RIGHT, padx=5)
     
     def open_annotation(self):
-        """Открытие окна разметки изображений"""
         AnnotationWindow(self, self.system)
 
     def start_camera(self):
@@ -1981,11 +1840,9 @@ class Application(tk.Tk):
             self.destroy()
     
     def debug_detection(self):
-        """Запуск отладки детекции"""
         self.system.show_detection_info()
 
     def toggle_logging(self):
-        """Переключение состояния логирования"""
         if self.system.logging_enabled:
             self.system.stop_logging()
             self.log_btn.config(text="Включить логирование")
