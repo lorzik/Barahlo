@@ -1114,6 +1114,7 @@ class AnnotationWindow(tk.Toplevel):
         self.configure(bg=COLORS["bg_primary"])
         self.scale_x = 1.0
         self.scale_y = 1.0
+        self.output_dir = None  # Добавляем переменную для хранения выбранной директории
         self.create_widgets()
         
         self.canvas.bind("<ButtonPress-1>", self.on_mouse_press)
@@ -1129,6 +1130,9 @@ class AnnotationWindow(tk.Toplevel):
         
         ttk.Button(control_frame, text="Загрузить изображения", 
                   command=self.load_images).pack(side=tk.LEFT, padx=5)
+        
+        ttk.Button(control_frame, text="Выбрать папку для сохранения", 
+                  command=self.select_output_dir).pack(side=tk.LEFT, padx=5)  # Новая кнопка
         
         ttk.Button(control_frame, text="Предыдущее", 
                   command=self.previous_image).pack(side=tk.LEFT, padx=5)
@@ -1169,6 +1173,9 @@ class AnnotationWindow(tk.Toplevel):
         bottom_frame = ttk.Frame(main_frame)
         bottom_frame.pack(fill=tk.X, pady=5)
         
+        ttk.Button(bottom_frame, text="Сохранить и перейти к следующему", 
+                  command=self.save_and_next).pack(side=tk.LEFT, padx=5)  # Измененная кнопка
+        
         ttk.Button(bottom_frame, text="Сохранить аннотации", 
                   command=self.save_annotations).pack(side=tk.LEFT, padx=5)
         
@@ -1195,7 +1202,77 @@ class AnnotationWindow(tk.Toplevel):
         current_text = self.class_var.get()
         if current_text and current_text not in self.annotator.classes:
             self.class_combo['values'] = list(self.annotator.classes) + [current_text]
+    def select_output_dir(self):
+        """Выбор директории для сохранения аннотаций"""
+        directory = filedialog.askdirectory(title="Выберите папку для сохранения аннотаций")
+        if directory:
+            self.output_dir = directory
+            self.status_var.set(f"Папка для сохранения: {os.path.basename(directory)}")
+            messagebox.showinfo("Успех", f"Аннотации будут сохраняться в: {directory}")
+
+    def save_and_next(self):
+        """Сохранить аннотации и перейти к следующему изображению"""
+        if not self.output_dir:
+            messagebox.showwarning("Предупреждение", "Сначала выберите папку для сохранения")
+            self.select_output_dir()
+            return
             
+        if not self.annotator.image_path:
+            messagebox.showwarning("Предупреждение", "Нет загруженного изображения")
+            return
+            
+        if not self.annotator.annotations:
+            messagebox.showwarning("Предупреждение", "Нет аннотаций для сохранения")
+            return
+            
+        try:
+            self.annotator.current_image = self.original_image
+            if self.annotator.save_annotations(self.output_dir):
+                self.save_class_list(self.output_dir)
+                self.status_var.set("Аннотации сохранены, переходим к следующему изображению")
+                
+                # Автоматически переходим к следующему изображению
+                if self.current_image_index < len(self.image_files) - 1:
+                    self.current_image_index += 1
+                    self.load_current_image()
+                else:
+                    messagebox.showinfo("Завершено", "Все изображения размечены!")
+                    self.status_var.set("Все изображения размечены")
+            else:
+                messagebox.showerror("Ошибка", "Не удалось сохранить аннотации")
+                
+        except Exception as e:
+            messagebox.showerror("Ошибка", f"Ошибка при сохранении: {str(e)}")
+
+    def save_annotations(self):
+        """Сохранение аннотаций (оригинальная функция)"""
+        if not self.annotator.image_path:
+            messagebox.showwarning("Предупреждение", "Нет загруженного изображения")
+            return
+            
+        if not self.annotator.annotations:
+            messagebox.showwarning("Предупреждение", "Нет аннотаций для сохранения")
+            return
+            
+        # Используем выбранную директорию или запрашиваем новую
+        output_dir = self.output_dir
+        if not output_dir:
+            output_dir = filedialog.askdirectory(title="Выберите папку для сохранения аннотаций")
+            if not output_dir:
+                return
+            self.output_dir = output_dir
+            
+        try:
+            self.annotator.current_image = self.original_image
+            if self.annotator.save_annotations(output_dir):
+                self.save_class_list(output_dir)
+                messagebox.showinfo("Успех", "Аннотации успешно сохранены!")
+            else:
+                messagebox.showerror("Ошибка", "Не удалось сохранить аннотации")
+                
+        except Exception as e:
+            messagebox.showerror("Ошибка", f"Ошибка при сохранении: {str(e)}")
+
     def add_new_class(self):
         new_class = self.class_var.get().strip()
         if new_class:
@@ -1361,26 +1438,6 @@ class AnnotationWindow(tk.Toplevel):
             self.current_image_index += 1
             self.load_current_image()
             
-    def save_annotations(self):
-        if not self.annotator.image_path:
-            messagebox.showwarning("Предупреждение", "Нет загруженного изображения")
-            return
-            
-        if not self.annotator.annotations:
-            messagebox.showwarning("Предупреждение", "Нет аннотаций для сохранения")
-            return
-            
-        output_dir = filedialog.askdirectory(title="Выберите папку для сохранения аннотаций")
-        if output_dir:
-            try:
-                self.annotator.current_image = self.original_image
-                if self.annotator.save_annotations(output_dir):
-                    messagebox.showinfo("Успех", "Аннотации успешно сохранены!")
-                    self.save_class_list(output_dir)
-                else:
-                    messagebox.showerror("Ошибка", "Не удалось сохранить аннотации")
-            except Exception as e:
-                messagebox.showerror("Ошибка", f"Ошибка при сохранении: {str(e)}")
                 
     def save_class_list(self, output_dir):
         try:
