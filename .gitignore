@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Веса моделей и результаты обучения (слишком большие для git)
+*.pt
+*.onnx
+*.engine
+runs/
+dataset/
+datasets/
+
+# Разметка и рабочие артефакты
+annotations/
+classes.names
+
+# Логи и временные файлы
+*.log
